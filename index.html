@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Women’s Health Spin the Wheel Challenge</title>
+<style>
+:root{--green:#0b6b4b;--gold:#f4c542;--cream:#fffaf0;--dark:#17342a;--red:#b42318}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#edf8f3,#fff8dc);color:var(--dark)}
+header{background:var(--green);color:white;padding:18px 24px;text-align:center}
+header h1{margin:0;font-size:clamp(24px,4vw,42px)}
+header p{margin:6px 0 0}
+main{max-width:1200px;margin:auto;padding:18px}
+.banner{padding:18px;border-radius:18px;text-align:center;font-size:clamp(28px,5vw,52px);font-weight:900;margin-bottom:16px;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.team1{background:var(--green);color:white;border:5px solid var(--gold)}
+.team2{background:var(--gold);color:var(--dark);border:5px solid var(--green)}
+.grid{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:16px}
+.card{background:white;border-radius:18px;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.team-card{text-align:center;opacity:.55;border:5px solid #d4ddd8;transition:.2s}
+.team-card.active{opacity:1;transform:scale(1.02);border-color:var(--gold)}
+#team2.active{border-color:var(--green)}
+.score{font-size:54px;font-weight:900;margin:8px 0}
+button{border:none;border-radius:12px;padding:12px 18px;font-size:16px;font-weight:800;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+.primary{background:var(--gold);color:#2b2600}
+.secondary{background:white;color:var(--green);border:2px solid var(--green)}
+.yes{background:#16815b;color:white;font-size:22px;padding:16px 28px}
+.no{background:#c0392b;color:white;font-size:22px;padding:16px 28px}
+.wheelbox{text-align:center}
+.pointer{width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:30px solid var(--dark);margin:0 auto -5px}
+canvas{width:280px;height:280px;border-radius:50%;border:8px solid white;box-shadow:0 0 0 4px var(--green),0 10px 25px rgba(0,0,0,.16);transition:transform 4s cubic-bezier(.17,.67,.16,1)}
+.message{font-size:22px;font-weight:800;text-align:center;margin:14px 0;min-height:30px;color:#8a2d12}
+.question-card{margin-top:16px}
+.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{background:#eaf5f0;padding:8px 12px;border-radius:999px;font-weight:800}
+.timer{font-size:36px;font-weight:900}
+.question{margin-top:14px;background:var(--cream);border-radius:16px;padding:24px;min-height:170px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:clamp(24px,3vw,36px);line-height:1.25}
+.qnum{font-size:18px;color:var(--green);font-weight:900;margin-bottom:10px}
+.answer{display:none;margin-top:14px;background:#eef8f3;border-left:6px solid var(--green);padding:18px;border-radius:12px;font-size:21px}
+.controls,.audio{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+select{padding:10px;border:2px solid var(--green);border-radius:10px;max-width:300px}
+.progress{height:14px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:14px}
+.progress div{height:100%;background:var(--green);width:0}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:18px}
+.modalbox{background:white;max-width:750px;width:100%;padding:24px;border-radius:18px;max-height:90vh;overflow:auto}
+#timer.green{color:#16815b}
+#timer.yellow{color:#b8860b}
+#timer.red{color:#c0392b;animation:pulseTimer .6s infinite alternate}
+@keyframes pulseTimer{from{transform:scale(1)}to{transform:scale(1.12)}}
+.steal-mode{background:linear-gradient(135deg,#fff0f0,#ffe9cc)!important}
+.final-mode{background:radial-gradient(circle at top,#232946,#0f172a)!important;color:white}
+.final-mode .card,.final-mode .question-card{background:#1f2937;color:white}
+.final-mode .question{background:#111827;color:white}
+.final-mode .badge{background:#374151;color:white}
+.confetti-piece{position:fixed;width:10px;height:18px;top:-20px;z-index:9999;animation:fall 3.2s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.9}}
+.score-report{font-size:28px;font-weight:900;text-align:center;padding:18px;border-radius:16px;background:#fff5cc;border:3px solid var(--gold);margin-top:14px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}canvas{width:240px;height:240px}}
+</style>
+</head>
+<body>
+<header><h1>Women’s Health Spin the Wheel Challenge</h1><p>Automatic two-team classroom review game</p></header>
+<main>
+<div id="turnBanner" class="banner team1">TEAM 1 — SPIN NOW</div>
+<div id="message" class="message">Team 1 begins the game.</div>
+
+<section class="grid">
+<div class="card team-card active" id="team1">
+<h2>Team 1</h2><div class="score" id="score1">0</div>
+<button class="secondary" onclick="adjustScore(0,100)">+100</button>
+<button class="secondary" onclick="adjustScore(0,-100)">−100</button>
+</div>
+
+<div class="card wheelbox">
+<div class="pointer"></div>
+<canvas id="wheel" width="500" height="500"></canvas>
+<h3 id="wheelResult">Spin to begin</h3>
+<button class="primary" id="spinBtn" onclick="spinWheel()">SPIN THE WHEEL</button>
+</div>
+
+<div class="card team-card" id="team2">
+<h2>Team 2</h2><div class="score" id="score2">0</div>
+<button class="secondary" onclick="adjustScore(1,100)">+100</button>
+<button class="secondary" onclick="adjustScore(1,-100)">−100</button>
+</div>
+</section>
+
+<section class="card question-card">
+<div class="meta">
+<span class="badge" id="count">Question 0 of 30</span><span class="badge">Category: <span id="category">—</span></span>
+<span class="badge">Value: <span id="value">—</span></span>
+<span class="timer" id="timer">30</span>
+</div>
+<div class="question"><div><div class="qnum" id="qnum">QUESTION —</div><div id="qtext">Spin the wheel to load a question.</div></div></div>
+<div class="answer" id="answer"></div>
+
+<div class="controls" id="judgeControls">
+<button class="yes" id="yesBtn" onclick="answerYes()" disabled>✓ YES, CORRECT</button>
+<button class="no" id="noBtn" onclick="answerNo()" disabled>✗ NO</button>
+</div>
+
+<div class="controls" id="stealControls" style="display:none">
+<button class="yes" onclick="stealCorrect()">✓ STEAL CORRECT</button>
+<button class="no" onclick="stealWrong()">✗ STEAL INCORRECT / NO STEAL</button>
+</div>
+
+<div class="audio">
+<label><strong>Voice:</strong></label><select id="voiceSelect" onchange="changeVoice()"></select>
+<button class="secondary" onclick="repeatQuestion()">Read Question</button>
+<button class="secondary" onclick="toggleAutoRead()" id="autoBtn">Auto-Read: ON</button>
+<button class="secondary" onclick="toggleSounds()" id="soundBtn">Sounds: ON</button>
+<button class="secondary" onclick="stopSpeaking()">Stop Reading</button>
+<button class="secondary" onclick="resetGame()">Reset Game</button>
+</div>
+<div id="scoreReport" class="score-report" style="display:none"></div>
+<div class="progress"><div id="progress"></div></div>
+</section>
+</main>
+
+<div class="modal" id="finalModal">
+<div class="modalbox">
+<h2>Question 31 — Final Jackpot</h2>
+<p id="finalText"></p>
+<div class="answer" id="finalAnswer"></div>
+<div class="controls">
+<button class="secondary" onclick="readFinal()">Read Final Question</button>
+<button class="secondary" onclick="showFinalAnswer()">Show/Read Answer</button>
+<button class="yes" onclick="awardFinal(0)">Award Team 1</button>
+<button class="yes" onclick="awardFinal(1)">Award Team 2</button>
+<button class="secondary" onclick="closeFinal()">Close</button>
+</div>
+</div>
+</div>
+
+<script>
+const QUESTIONS=[{"q": "What is the first and least invasive diagnostic test typically performed when male-factor infertility is suspected?", "a": "Semen analysis"}, {"q": "Which diagnostic procedure uses contrast dye to evaluate whether the fallopian tubes are open?", "a": "Hysterosalpingography, or HSG"}, {"q": "Which assisted reproductive technique injects one sperm directly into the cytoplasm of an oocyte?", "a": "Intracytoplasmic sperm injection, or ICSI"}, {"q": "Which assisted reproductive procedure fertilizes oocytes in a laboratory before transferring embryos into the uterus?", "a": "In vitro fertilization, or IVF"}, {"q": "A couple has never achieved a pregnancy after at least one year of unprotected intercourse. What type of infertility is this?", "a": "Primary infertility"}, {"q": "Absence of menstruation by age fourteen with no development of secondary sexual characteristics is classified as what condition?", "a": "Primary amenorrhea"}, {"q": "A woman who previously menstruated regularly has no menses for three consecutive cycles. What condition does this describe?", "a": "Secondary amenorrhea"}, {"q": "Excess production of which substance is the primary cause of primary dysmenorrhea?", "a": "Prostaglandins"}, {"q": "Painful menstruation caused by pelvic or uterine pathology is classified as what type of dysmenorrhea?", "a": "Secondary dysmenorrhea"}, {"q": "Which nonpharmacologic comfort measure is commonly recommended for menstrual cramping?", "a": "Heat application"}, {"q": "What disorder occurs when tissue similar to the endometrium implants outside the uterine cavity?", "a": "Endometriosis"}, {"q": "What is the gold-standard diagnostic procedure for confirming endometriosis?", "a": "Laparoscopy"}, {"q": "What term describes painful sexual intercourse, a common symptom of endometriosis?", "a": "Dyspareunia"}, {"q": "Severe dysmenorrhea that does not improve with NSAIDs should increase suspicion for what condition?", "a": "Endometriosis"}, {"q": "Which medication class suppresses ovarian hormone production and may be used to treat endometriosis?", "a": "Gonadotropin-releasing hormone agonists, or GnRH agonists"}, {"q": "A patient with PCOS has acne and excessive facial hair. Which hormonal finding is responsible?", "a": "Hyperandrogenism"}, {"q": "Why is metformin commonly prescribed for a patient with PCOS?", "a": "To improve insulin sensitivity"}, {"q": "Which medication is commonly used to induce ovulation in a patient with PCOS who desires pregnancy?", "a": "Letrozole or clomiphene"}, {"q": "Which metabolic disease is a major long-term complication of PCOS?", "a": "Type 2 diabetes mellitus"}, {"q": "Failure to release an oocyte during the menstrual cycle is called what?", "a": "Anovulation"}, {"q": "Which contraceptive method also helps protect against sexually transmitted infections?", "a": "Condoms"}, {"q": "Which oral contraceptive contains both estrogen and progestin?", "a": "Combined oral contraceptive"}, {"q": "Which oral contraceptive must be taken at the same time every day and contains only progestin?", "a": "The progestin-only pill, or minipill"}, {"q": "Which emergency contraceptive is most effective when taken within seventy-two hours after unprotected intercourse?", "a": "Plan B, or levonorgestrel emergency contraception"}, {"q": "Which long-acting reversible contraceptive is inserted into the uterus and may remain effective for several years?", "a": "An intrauterine device, or IUD"}, {"q": "Menopause is clinically confirmed after how many consecutive months without a menstrual period?", "a": "Twelve months"}, {"q": "Hot flashes and night sweats are classified as what type of menopausal symptom?", "a": "Vasomotor symptoms"}, {"q": "What type of over-the-counter lubricant is recommended to reduce vaginal discomfort during intercourse after menopause?", "a": "A water-based lubricant"}, {"q": "Which vitamin found in green leafy vegetables supports bone health after menopause?", "a": "Vitamin K"}, {"q": "Smoking generally causes menopause to occur how much earlier than in women who do not smoke?", "a": "One to two years earlier"}];
+const FINAL={"q": "A twenty-nine-year-old patient reports progressively worsening pelvic pain, severe dysmenorrhea unrelieved by NSAIDs, painful intercourse, and difficulty becoming pregnant. What is the most likely diagnosis?", "a": "Endometriosis"};
+const CATEGORIES=["Infertility", "Infertility", "Infertility", "Infertility", "Infertility", "Menstrual Disorders", "Menstrual Disorders", "Menstrual Disorders", "Menstrual Disorders", "Menstrual Disorders", "Endometriosis", "Endometriosis", "Endometriosis", "Endometriosis", "Endometriosis", "PCOS", "PCOS", "PCOS", "PCOS", "PCOS", "Contraception", "Contraception", "Contraception", "Contraception", "Contraception", "Menopause", "Menopause", "Menopause", "Menopause", "Menopause"];
+const segments=[
+{label:"100",type:"points",value:100},{label:"200",type:"points",value:200},
+{label:"300",type:"points",value:300},{label:"400",type:"points",value:400},
+{label:"500",type:"points",value:500},{label:"DOUBLE",type:"double"},
+{label:"+200 BONUS",type:"bonus"},{label:"SPIN AGAIN",type:"spinagain"},
+{label:"LOSE TURN",type:"lose"},{label:"JACKPOT",type:"points",value:1000}
+];
+let scores=[0,0],currentTeam=0,turnOwner=0,currentPoints=0,qIndex=0,state="ready";
+let timerInt=null,timeLeft=30,currentTimerLength=30,rotation=0,autoRead=true,soundsOn=true,selectedVoice=null,musicNodes=[],timerMode="question";
+
+const canvas=document.getElementById("wheel"),ctx=canvas.getContext("2d");
+function drawWheel(){
+ const arc=2*Math.PI/segments.length;
+ segments.forEach((s,i)=>{ctx.beginPath();ctx.moveTo(250,250);ctx.arc(250,250,240,i*arc,(i+1)*arc);ctx.closePath();
+ ctx.fillStyle=i%2===0?"#0b6b4b":"#f4c542";ctx.fill();ctx.save();ctx.translate(250,250);ctx.rotate(i*arc+arc/2);
+ ctx.textAlign="right";ctx.fillStyle=i%2===0?"white":"#17342a";ctx.font="bold 22px Arial";ctx.fillText(s.label,220,7);ctx.restore();});
+}
+drawWheel();
+
+function loadVoices(){
+ const voices=speechSynthesis.getVoices().filter(v=>v.lang&&v.lang.startsWith("en"));
+ const prefs=[/Natural/i,/Neural/i,/Microsoft Ava/i,/Microsoft Jenny/i,/Microsoft Aria/i,/Google US English/i,/Samantha/i];
+ selectedVoice=null;
+ for(const p of prefs){selectedVoice=voices.find(v=>p.test(v.name));if(selectedVoice)break;}
+ selectedVoice=selectedVoice||voices.find(v=>v.lang==="en-US")||voices[0]||null;
+ const s=document.getElementById("voiceSelect");s.innerHTML="";
+ voices.forEach(v=>{const o=document.createElement("option");o.value=v.name;o.textContent=v.name+" ("+v.lang+")";s.appendChild(o);});
+ if(selectedVoice)s.value=selectedVoice.name;
+}
+if("speechSynthesis" in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+function changeVoice(){selectedVoice=speechSynthesis.getVoices().find(v=>v.name===document.getElementById("voiceSelect").value)||selectedVoice;speak("This is the selected game voice.");}
+function speak(t,onend=null){if(!autoRead||!("speechSynthesis" in window)){if(onend)onend();return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=0.98;u.pitch=1.02;if(selectedVoice)u.voice=selectedVoice;if(onend)u.onend=onend;speechSynthesis.speak(u);}
+function stopSpeaking(){if("speechSynthesis" in window)speechSynthesis.cancel();}
+
+function tone(f,d=.1,type="sine",delay=0){if(!soundsOn)return;try{const A=window.AudioContext||window.webkitAudioContext;const ac=window.ac||(window.ac=new A());if(ac.state==="suspended")ac.resume();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;o.type=type;g.gain.setValueAtTime(.0001,ac.currentTime+delay);g.gain.exponentialRampToValueAtTime(.18,ac.currentTime+delay+.01);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+delay+d);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+delay);o.stop(ac.currentTime+delay+d+.02);}catch(e){}}
+function spinSound(){for(let i=0;i<22;i++)tone(250+i*15,.04,"square",i*.085);tone(800,.18,"sine",1.95);}
+function correctSound(){tone(523,.12);tone(659,.12,"sine",.12);tone(784,.25,"sine",.24);}
+function wrongSound(){tone(220,.2,"sawtooth");tone(165,.3,"sawtooth",.18);}
+function loseSound(){tone(300,.1,"triangle");tone(230,.1,"triangle",.12);tone(170,.25,"triangle",.24);}
+
+function setBanner(text){const b=document.getElementById("turnBanner");b.textContent=text;b.className="banner "+(currentTeam===0?"team1":"team2");}
+function setMessage(t){document.getElementById("message").textContent=t;}
+function updateTeams(){document.getElementById("team1").classList.toggle("active",currentTeam===0);document.getElementById("team2").classList.toggle("active",currentTeam===1);setBanner(`TEAM ${currentTeam+1} — ${state==="steal"?"STEAL CHANCE":"SPIN NOW"}`);}
+function updateScores(){document.getElementById("score1").textContent=scores[0];document.getElementById("score2").textContent=scores[1];}
+function adjustScore(t,n){scores[t]=Math.max(0,scores[t]+n);updateScores();}
+
+function spinWheel(){
+ if(state!=="ready")return;turnOwner=currentTeam;stopSpeaking();spinSound();state="spinning";document.getElementById("spinBtn").disabled=true;setMessage(`Team ${currentTeam+1} is spinning...`);
+ const idx=Math.floor(Math.random()*segments.length),arc=360/segments.length;rotation+=2160+(360-(idx*arc+arc/2)-90);canvas.style.transform=`rotate(${rotation}deg)`;
+ setTimeout(()=>handleSegment(segments[idx]),4100);
+}
+function handleSegment(s){
+ document.getElementById("wheelResult").textContent=s.label;
+ if(s.type==="spinagain"){state="ready";document.getElementById("spinBtn").disabled=false;setMessage(`Team ${currentTeam+1} spins again.`);speak(`Team ${currentTeam+1}, spin again.`);return;}
+ if(s.type==="lose"){loseSound();const lost=currentTeam;currentTeam=1-currentTeam;state="ready";updateTeams();document.getElementById("spinBtn").disabled=false;setMessage(`Team ${lost+1} lost the turn.`);speak(`Team ${lost+1} loses the turn. Team ${currentTeam+1}, please spin the wheel.`);return;}
+ currentPoints=s.type==="double"?600:s.type==="bonus"?500:s.value;
+ loadQuestion();
+}
+function loadQuestion(){
+ if(qIndex>=QUESTIONS.length){showFinal();return;}
+ const q=QUESTIONS[qIndex];document.getElementById("qnum").textContent=`QUESTION ${qIndex+1}`;document.getElementById("qtext").textContent=q.q;
+ document.getElementById("answer").textContent=`Answer to Question ${qIndex+1}: ${q.a}`;document.getElementById("answer").style.display="none";
+ document.getElementById("count").textContent=`Question ${qIndex+1} of ${QUESTIONS.length}`;document.getElementById("category").textContent=CATEGORIES[qIndex];document.getElementById("value").textContent=currentPoints+" points";
+ currentTimerLength=30; timerMode="question"; document.body.classList.remove("steal-mode","final-mode"); state="question";document.getElementById("yesBtn").disabled=false;document.getElementById("noBtn").disabled=false;
+ document.getElementById("judgeControls").style.display="flex";document.getElementById("stealControls").style.display="none";
+ setMessage(`Team ${currentTeam+1}: answer for ${currentPoints} points.`);
+ speak(`Question ${qIndex+1}. ${q.q} The 30 second timer will begin in 3, 2, 1.`,startTimer);
+}
+function stopTimerMusic(){
+ musicNodes.forEach(n=>{try{n.stop();}catch(e){}});
+ musicNodes=[];
+}
+function startTimerMusic(){
+ if(!soundsOn)return;
+ stopTimerMusic();
+ try{
+  const A=window.AudioContext||window.webkitAudioContext;
+  const ac=window.ac||(window.ac=new A());
+  if(ac.state==="suspended")ac.resume();
+  const questionNotes=[261.6,329.6,392,329.6,293.7,349.2,440,349.2];
+  const stealNotes=[220,277.2,329.6,277.2,246.9,311.1,370,311.1];
+  const finalNotes=[196,246.9,293.7,392,293.7,246.9];
+  const notes=timerMode==="steal"?stealNotes:timerMode==="final"?finalNotes:questionNotes;
+  const step=timerMode==="steal"?.42:timerMode==="final"?.58:.5;
+  const total=Math.ceil(currentTimerLength/step);
+  for(let i=0;i<total;i++){
+   const o=ac.createOscillator(),g=ac.createGain();
+   o.type=timerMode==="steal"?"square":timerMode==="final"?"sawtooth":"triangle";
+   o.frequency.value=notes[i%notes.length];
+   const start=ac.currentTime+i*step;
+   g.gain.setValueAtTime(.0001,start);
+   g.gain.exponentialRampToValueAtTime(timerMode==="final"?.028:.035,start+.03);
+   g.gain.exponentialRampToValueAtTime(.0001,start+step*.82);
+   o.connect(g);g.connect(ac.destination);o.start(start);o.stop(start+step*.88);
+   musicNodes.push(o);
+  }
+ }catch(e){}
+}
+function startTimer(){
+ clearInterval(timerInt);
+ stopTimerMusic();
+ timeLeft=currentTimerLength;
+ const timerEl=document.getElementById("timer");
+ timerEl.textContent=timeLeft;
+ updateTimerColor();
+ startTimerMusic();
+ timerInt=setInterval(()=>{
+  timeLeft--;
+  timerEl.textContent=timeLeft;
+  updateTimerColor();
+  if(timeLeft<=5&&timeLeft>0)tone(760,.08,"square");
+  if(timeLeft<=0){
+   clearInterval(timerInt);
+   stopTimerMusic();
+   tone(150,.5,"sawtooth");
+   setMessage("Time is up. Mark whether the answer was correct.");
+   speak("Time is up. Was that answer correct?");
+  }
+ },1000);
+}
+function updateTimerColor(){
+ const t=document.getElementById("timer");
+ t.classList.remove("green","yellow","red");
+ if(timeLeft>15)t.classList.add("green");
+ else if(timeLeft>5)t.classList.add("yellow");
+ else t.classList.add("red");
+}
+function scoreUpdateText(){
+ const s1=scores[0],s2=scores[1];
+ if(s1===s2)return `The score is tied at ${s1} points each.`;
+ const leader=s1>s2?1:2;
+ const lead=Math.abs(s1-s2);
+ return `Team ${leader} is winning. The score is Team 1, ${s1} points, and Team 2, ${s2} points. Team ${leader} leads by ${lead} points.`;
+}
+function announceScore(next){
+ const completedQuestion=qIndex+1;
+ if(completedQuestion % 5 === 0){
+  const update=`After ${completedQuestion} questions, ${scoreUpdateText()}`;
+  const box=document.getElementById("scoreReport");
+  box.textContent=update;
+  box.style.display="block";
+  setMessage(update);
+  speak(update,()=>{setTimeout(()=>{box.style.display="none";next();},700);});
+ } else {
+  next();
+ }
+}
+function answerYes(){clearInterval(timerInt);stopTimerMusic();correctSound();scores[currentTeam]+=currentPoints;updateScores();document.getElementById("answer").style.display="block";disableJudge();speak(`Correct. The answer is: ${QUESTIONS[qIndex].a}`,()=>announceScore(finishQuestion));}
+function answerNo(){clearInterval(timerInt);stopTimerMusic();wrongSound();currentTeam=1-turnOwner;currentTimerLength=15;timerMode="steal";document.body.classList.add("steal-mode");state="steal";updateTeams();document.getElementById("judgeControls").style.display="none";document.getElementById("stealControls").style.display="flex";
+ setMessage(`Team ${currentTeam+1} may steal for ${currentPoints} points.`);
+ speak(`Team ${currentTeam+1}, you have a chance to steal for ${currentPoints} points. Discuss with your team and give one final answer. If correct, you earn the points. If incorrect, no points are awarded. The 15 second timer will begin in 3, 2, 1.`,startTimer);
+}
+function stealCorrect(){clearInterval(timerInt);stopTimerMusic();correctSound();scores[currentTeam]+=currentPoints;updateScores();document.getElementById("answer").style.display="block";document.getElementById("stealControls").style.display="none";speak(`The steal is correct. The answer is: ${QUESTIONS[qIndex].a}`,()=>announceScore(finishQuestion));}
+function stealWrong(){clearInterval(timerInt);stopTimerMusic();wrongSound();document.getElementById("answer").style.display="block";document.getElementById("stealControls").style.display="none";speak(`The steal is incorrect, or no steal was attempted. The correct answer is: ${QUESTIONS[qIndex].a}`,()=>announceScore(finishQuestion));}
+function disableJudge(){document.getElementById("yesBtn").disabled=true;document.getElementById("noBtn").disabled=true;}
+function finishQuestion(){document.body.classList.remove("steal-mode");qIndex++;document.getElementById("progress").style.width=(qIndex/QUESTIONS.length*100)+"%";currentTeam=1-turnOwner;state="ready";updateTeams();document.getElementById("spinBtn").disabled=false;disableJudge();document.getElementById("judgeControls").style.display="flex";document.getElementById("stealControls").style.display="none";
+ document.getElementById("qnum").textContent=qIndex>=QUESTIONS.length?"FINAL ROUND":"QUESTION —";document.getElementById("qtext").textContent=qIndex>=QUESTIONS.length?"Regular questions complete. Final Jackpot is ready!":"Spin the wheel to load the next question.";document.getElementById("value").textContent="—";document.getElementById("answer").style.display="none";
+ if(qIndex>=QUESTIONS.length)setTimeout(showFinal,500);else{setMessage(`Team ${currentTeam+1} spins next.`);speak(`Team ${currentTeam+1}, it is your turn. Please spin the wheel.`);}
+}
+function repeatQuestion(){if(qIndex<QUESTIONS.length)speak(`Question ${qIndex+1}. ${QUESTIONS[qIndex].q}`);}
+function toggleAutoRead(){autoRead=!autoRead;document.getElementById("autoBtn").textContent="Auto-Read: "+(autoRead?"ON":"OFF");if(!autoRead)stopSpeaking();}
+function toggleSounds(){soundsOn=!soundsOn;document.getElementById("soundBtn").textContent="Sounds: "+(soundsOn?"ON":"OFF");}
+function resetGame(){if(!confirm("Reset the entire game?"))return;stopSpeaking();clearInterval(timerInt);stopTimerMusic();document.body.classList.remove("steal-mode","final-mode");scores=[0,0];currentTeam=0;turnOwner=0;currentPoints=0;qIndex=0;state="ready";timeLeft=30;rotation=0;canvas.style.transform="rotate(0deg)";updateScores();updateTeams();document.getElementById("spinBtn").disabled=false;document.getElementById("qnum").textContent="QUESTION —";document.getElementById("qtext").textContent="Spin the wheel to load a question.";document.getElementById("count").textContent="Question 0 of 30";document.getElementById("category").textContent="—";document.getElementById("value").textContent="—";document.getElementById("timer").textContent="30";document.getElementById("progress").style.width="0";document.getElementById("answer").style.display="none";disableJudge();setMessage("Team 1 begins the game.");speak("Team 1 begins the game. Please spin the wheel.");}
+function showFinal(){timerMode="final";currentTimerLength=30;document.body.classList.remove("steal-mode");document.body.classList.add("final-mode");document.getElementById("finalText").textContent=FINAL.q;document.getElementById("finalAnswer").textContent="Answer: "+FINAL.a;document.getElementById("finalAnswer").style.display="none";document.getElementById("finalModal").style.display="flex";speak("Question 31. Final jackpot question. "+FINAL.q+" The 15 second timer will begin in 3, 2, 1.",startTimer);}
+function readFinal(){speak("Question 31. Final jackpot question. "+FINAL.q);}
+function showFinalAnswer(){document.getElementById("finalAnswer").style.display="block";speak("The final answer is: "+FINAL.a);}
+function launchConfetti(){
+ const colors=["#f4c542","#0b6b4b","#ffffff","#e67e22","#3498db"];
+ for(let i=0;i<120;i++){
+  const d=document.createElement("div");
+  d.className="confetti-piece";
+  d.style.left=Math.random()*100+"vw";
+  d.style.background=colors[Math.floor(Math.random()*colors.length)];
+  d.style.animationDelay=(Math.random()*1.4)+"s";
+  d.style.transform=`rotate(${Math.random()*360}deg)`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),5000);
+ }
+}
+function announceWinner(){
+ let msg;
+ if(scores[0]===scores[1]) msg=`The game ends in a tie. Both teams have ${scores[0]} points.`;
+ else{
+  const winner=scores[0]>scores[1]?1:2;
+  msg=`Team ${winner} wins the game. Final score: Team 1, ${scores[0]} points. Team 2, ${scores[1]} points.`;
+ }
+ setMessage(msg);
+ launchConfetti();
+ speak(msg);
+}
+function awardFinal(t){scores[t]+=1000;updateScores();correctSound();speak(`Team ${t+1} earns 1000 points.`,announceWinner);}
+function closeFinal(){document.getElementById("finalModal").style.display="none";clearInterval(timerInt);stopTimerMusic();document.body.classList.remove("final-mode");}
+window.addEventListener("load",()=>setTimeout(()=>speak("Team 1 begins the game. Please spin the wheel."),700));
+</script>
+</body></html>
